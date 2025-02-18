@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Link from 'next/link';
 import './App.css';
 import { generatePersonalizedContent } from './services/aiService';
 
@@ -56,10 +57,10 @@ function App() {
       <nav className="navbar">
         <h1 className="site-title">EcoLearn<span>.AI</span></h1>
         <div className="nav-links">
-          <a href="#">Courses</a>
-          <a href="#">Interactive Tools</a>
-          <a href="#">Teacher Resources</a>
-          <a href="#">About</a>
+          <Link href="/courses">Courses</Link>
+          <Link href="/tools">Interactive Tools</Link>
+          <Link href="/resources">Teacher Resources</Link>
+          <Link href="/about">About</Link>
         </div>
       </nav>
 

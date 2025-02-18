@@ -97,12 +97,12 @@ class DocumentEnhancer:
             messages=[
                 {"role": "system", "content": """You are an expert educator enhancing worksheets with climate change concepts.
                 FORMATTING REQUIREMENTS:
-                1. Use asterisks for headers:
-                   - Main headers/titles: Wrap in single asterisks *like this*
-                   - Subheaders/sections: Wrap in double asterisks **like this**
+                1. Use double asterisks for all headers:
+                   - Main headers/titles: Wrap in double asterisks **like this**
+                   - Section headers: Also wrap in double asterisks **like this**
                    
                 2. Format structure:
-                   *Main Title*
+                   **Main Title**
                    [blank line]
                    **Section Header**
                    [blank line]
@@ -120,7 +120,7 @@ class DocumentEnhancer:
                    - Start with http:// or https://
                    
                 Example format:
-                *Plant Biology Worksheet*
+                **Plant Biology Worksheet**
                 
                 **Introduction**
                 
@@ -134,7 +134,7 @@ class DocumentEnhancer:
                 2. Add climate connections in parentheses
                 3. Maintain the academic rigor
                 4. Add 1-2 climate-related questions at the end
-                5. Remember: Use *single asterisks* for main headers and **double asterisks** for subheaders"""},
+                5. Remember: Use **double asterisks** for ALL headers"""},
                 {"role": "user", "content": f"Enhance this worksheet:\n\n{document_text}"}
             ]
         )
