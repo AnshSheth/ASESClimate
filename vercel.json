@@ -11,11 +11,23 @@
   "routes": [
     {
       "src": "/api/enhance-document",
-      "dest": "/api/enhance.py"
+      "methods": ["POST", "OPTIONS"],
+      "dest": "/api/enhance.py",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Accept"
+      }
     },
     {
       "src": "/api/download-pdf",
-      "dest": "/api/download.py"
+      "methods": ["POST", "OPTIONS"],
+      "dest": "/api/download.py",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Accept"
+      }
     }
   ]
 } 

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Body, HTTPException
+from fastapi import FastAPI, UploadFile, File, Body, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from rag_processor import DocumentEnhancer
@@ -31,8 +31,20 @@ except Exception as e:
     logger.error(f"Failed to initialize RAG processor: {str(e)}")
     raise
 
+@app.options("/api/enhance-document")
+async def enhance_document_options():
+    return JSONResponse(
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Accept",
+        },
+    )
+
 @app.post("/api/enhance-document")
 async def enhance_document(
+    request: Request,
     file: UploadFile = File(...),
     subject_area: str = "biology"
 ):
@@ -70,7 +82,14 @@ async def enhance_document(
                 subject_area
             )
             logger.info("Document enhanced successfully")
-            return {"enhanced_content": enhanced_content}
+            return JSONResponse(
+                content={"enhanced_content": enhanced_content},
+                headers={
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "POST, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, Accept",
+                }
+            )
         except Exception as e:
             logger.error(f"Error enhancing document: {str(e)}")
             return JSONResponse(
