@@ -73,7 +73,7 @@ export default function FileUpload() {
       validateFile(file)
       formData.append('file', file)
 
-      const response = await fetch('http://localhost:8000/api/enhance-document', {
+      const response = await fetch('/api/enhance-document', {
         method: 'POST',
         body: formData,
         headers: {
@@ -108,7 +108,7 @@ export default function FileUpload() {
     setError(null)
     
     try {
-      const response = await fetch('http://localhost:8000/api/download-pdf', {
+      const response = await fetch('/api/download-pdf', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
