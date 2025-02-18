@@ -1,9 +1,9 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/.next",
   "framework": "nextjs",
   "functions": {
-    "api/*.py": {
+    "frontend/api/*.py": {
       "runtime": "python3.9",
       "memory": 1024
     }
@@ -11,11 +11,11 @@
   "rewrites": [
     {
       "source": "/api/enhance-document",
-      "destination": "/api/enhance.py"
+      "destination": "/frontend/api/enhance.py"
     },
     {
       "source": "/api/download-pdf",
-      "destination": "/api/download.py"
+      "destination": "/frontend/api/download.py"
     }
   ],
   "headers": [
