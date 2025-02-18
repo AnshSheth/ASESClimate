@@ -36,3 +36,4 @@ yarn-error.log*
 __pycache__/
 *.py[cod]
 *$py.class
+.next/
