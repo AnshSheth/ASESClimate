@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Body, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
-from backend.app.ml.rag_processor import DocumentEnhancer
+from rag_processor import DocumentEnhancer
 from pypdf import PdfReader
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
