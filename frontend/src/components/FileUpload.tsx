@@ -77,9 +77,8 @@ export default function FileUpload() {
         method: 'POST',
         body: formData,
         headers: {
-          'Accept': 'application/json',
-        },
-        credentials: 'include',
+          'Accept': 'application/json'
+        }
       })
 
       if (!response.ok) {
@@ -112,9 +111,8 @@ export default function FileUpload() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/pdf',
+          'Accept': 'application/pdf'
         },
-        credentials: 'include',
         body: JSON.stringify(enhancedContent)
       })
 
