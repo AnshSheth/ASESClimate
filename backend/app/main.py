@@ -61,30 +61,76 @@ def create_pdf(content: str) -> bytes:
         width, height = letter
         y = height - 40  # Start 40 points down from top
         
+        # Font configurations
+        c.setFont("Helvetica-Bold", 16)  # Default font for headers
+        
         # Split content into lines
         lines = content.split('\n')
         for line in lines:
-            # Wrap long lines
-            words = line.split()
-            line_parts = []
-            current_line = []
+            # Skip empty lines but add spacing
+            if not line.strip():
+                y -= 15
+                continue
+                
+            # Handle double asterisk sections (smaller headers)
+            if line.startswith('**') and line.endswith('**'):
+                c.setFont("Helvetica-Bold", 14)
+                text = line.replace('**', '')
+                c.drawString(40, y, text)
+                y -= 25  # More spacing after headers
+                c.setFont("Helvetica", 12)  # Reset font
+                
+            # Handle single asterisk sections (major headers)
+            elif line.startswith('*') and line.endswith('*'):
+                c.setFont("Helvetica-Bold", 16)
+                text = line.replace('*', '')
+                c.drawString(40, y, text)
+                y -= 30  # More spacing after major headers
+                c.setFont("Helvetica", 12)  # Reset font
+                
+            # Handle questions (lines starting with numbers)
+            elif line.strip() and line[0].isdigit() and '. ' in line:
+                c.setFont("Helvetica", 12)
+                # Wrap long lines
+                words = line.split()
+                current_line = []
+                x = 40
+                
+                for word in words:
+                    current_line.append(word)
+                    if c.stringWidth(' '.join(current_line)) > width - 80:
+                        c.drawString(x, y, ' '.join(current_line[:-1]))
+                        y -= 15
+                        current_line = [word]
+                        x = 60  # Indent continuation lines
+                
+                if current_line:
+                    c.drawString(x, y, ' '.join(current_line))
+                y -= 20  # More spacing after questions
+                
+            # Regular text
+            else:
+                c.setFont("Helvetica", 12)
+                # Wrap long lines
+                words = line.split()
+                current_line = []
+                
+                for word in words:
+                    current_line.append(word)
+                    if c.stringWidth(' '.join(current_line)) > width - 80:
+                        c.drawString(40, y, ' '.join(current_line[:-1]))
+                        y -= 15
+                        current_line = [word]
+                
+                if current_line:
+                    c.drawString(40, y, ' '.join(current_line))
+                y -= 15
             
-            for word in words:
-                current_line.append(word)
-                if c.stringWidth(' '.join(current_line)) > width - 80:  # 40-point margins
-                    line_parts.append(' '.join(current_line[:-1]))
-                    current_line = [word]
-            if current_line:
-                line_parts.append(' '.join(current_line))
-            
-            for part in line_parts:
-                if y < 40:  # Bottom margin
-                    c.showPage()
-                    y = height - 40
-                c.drawString(40, y, part)
-                y -= 15  # Line spacing
-            
-            y -= 5  # Paragraph spacing
+            # Check if we need a new page
+            if y < 40:
+                c.showPage()
+                y = height - 40
+                c.setFont("Helvetica", 12)  # Reset font for new page
         
         c.save()
         buffer.seek(0)
