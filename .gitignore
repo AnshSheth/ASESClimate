@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/frontend/node_modules
 /.pnp
 .pnp.js
 
@@ -28,3 +29,8 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
