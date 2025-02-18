@@ -3,11 +3,41 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-rgb: 255, 255, 255;
+  --foreground-rgb: 47, 79, 79;  /* Dark Slate Gray */
+  --background-start-rgb: 245, 245, 220;  /* Beige */
+  --background-end-rgb: 255, 255, 255;  /* White */
 }
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-rgb));
+  background: linear-gradient(
+    135deg,
+    rgb(var(--background-start-rgb)),
+    rgb(var(--background-end-rgb))
+  );
+  min-height: 100vh;
+}
+
+@layer components {
+  .eco-card {
+    @apply bg-white/90 backdrop-blur-sm rounded-xl shadow-natural 
+           border border-ecodify-sage/30 p-6 
+           transition-all duration-300 hover:shadow-lg;
+  }
+  
+  .eco-button {
+    @apply bg-gradient-to-r from-ecodify-leaf to-ecodify-sage
+           text-white font-medium px-6 py-3 rounded-lg
+           shadow-natural transition-all duration-300
+           hover:shadow-lg hover:scale-105 
+           disabled:opacity-50 disabled:hover:scale-100
+           flex items-center justify-center gap-2;
+  }
+
+  .eco-input {
+    @apply border-2 border-dashed border-ecodify-sage/60 
+           rounded-lg p-6 bg-white/80 backdrop-blur-sm
+           transition-all duration-300
+           hover:border-ecodify-leaf/70 focus-within:border-ecodify-leaf;
+  }
 } 

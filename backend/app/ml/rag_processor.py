@@ -87,15 +87,8 @@ class DocumentEnhancer:
         }
     
     def enhance_document(self, document_text: str, subject_area: str = None) -> str:
-        # Analyze document if subject not provided
-        if not subject_area:
-            analysis = self.analyze_document(document_text)
-            subject_area = analysis["subject"]
-        
         # Find similar climate-integrated examples
         similar_examples = self.doc_store.find_similar(document_text)
-        
-        # Create a prompt that includes the examples
         examples_text = "\n\n---\n\n".join(similar_examples)
         
         # Execute enhancement using the model with examples
@@ -103,15 +96,45 @@ class DocumentEnhancer:
             model=self.model_name,
             messages=[
                 {"role": "system", "content": """You are an expert educator enhancing worksheets with climate change concepts.
-                Study these example climate-integrated worksheets to understand the patterns and style of integration:"""},
+                FORMATTING REQUIREMENTS:
+                1. Use asterisks for headers:
+                   - Main headers/titles: Wrap in single asterisks *like this*
+                   - Subheaders/sections: Wrap in double asterisks **like this**
+                   
+                2. Format structure:
+                   *Main Title*
+                   [blank line]
+                   **Section Header**
+                   [blank line]
+                   Content
+                   [blank line]
+                   
+                3. For questions:
+                   - Start with the number and period (e.g., "1. ")
+                   - Put climate-related additions in simple parentheses
+                   - One question per line
+                   - Add a blank line between questions
+                   
+                4. Links:
+                   - Write as plain text without brackets
+                   - Start with http:// or https://
+                   
+                Example format:
+                *Plant Biology Worksheet*
+                
+                **Introduction**
+                
+                1. What is photosynthesis? (How does this process help regulate atmospheric CO2?)
+                
+                2. Describe cell structure. (How do cellular adaptations help plants cope with climate change?)"""},
                 {"role": "user", "content": f"Example climate-integrated worksheets:\n\n{examples_text}"},
                 {"role": "system", "content": """Now enhance the following worksheet using similar patterns of climate integration.
                 REQUIREMENTS:
                 1. Keep the original content and structure
-                2. Add climate connections in a similar style to the examples
-                3. Maintain the academic rigor and educational objectives
-                4. Use parenthetical additions for climate connections
-                5. Add 1-2 climate-related questions at the end"""},
+                2. Add climate connections in parentheses
+                3. Maintain the academic rigor
+                4. Add 1-2 climate-related questions at the end
+                5. Remember: Use *single asterisks* for main headers and **double asterisks** for subheaders"""},
                 {"role": "user", "content": f"Enhance this worksheet:\n\n{document_text}"}
             ]
         )
