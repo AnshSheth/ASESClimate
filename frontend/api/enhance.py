@@ -31,7 +31,7 @@ except Exception as e:
     logger.error(f"Failed to initialize RAG processor: {str(e)}")
     raise
 
-@app.options("/api/enhance-document")
+@app.options("/enhance-document")
 async def enhance_document_options():
     headers = {
         "Access-Control-Allow-Origin": "*",
@@ -41,7 +41,7 @@ async def enhance_document_options():
     }
     return JSONResponse(content={}, headers=headers)
 
-@app.post("/api/enhance-document")
+@app.post("/enhance-document")
 async def enhance_document(
     request: Request,
     file: UploadFile = File(...),

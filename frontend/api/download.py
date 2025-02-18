@@ -93,7 +93,7 @@ def create_pdf(content: str) -> bytes:
             detail=f"Error generating PDF: {str(e)}"
         )
 
-@app.post("/api/download-pdf")
+@app.post("/download-pdf")
 async def download_pdf(content: str = Body(...)):
     if not content or len(content.strip()) == 0:
         raise HTTPException(
