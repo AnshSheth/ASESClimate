@@ -72,17 +72,16 @@ export default function FileUpload() {
     try {
       validateFile(file)
       formData.append('file', file)
+      formData.append('subject_area', 'biology')
 
       const response = await fetch('/api/enhance-document', {
         method: 'POST',
-        body: formData,
-        headers: {
-          'Accept': 'application/json',
-        }
+        body: formData
       })
 
       if (!response.ok) {
-        throw new Error(`Error: ${response.statusText}`)
+        const errorText = await response.text()
+        throw new Error(`Error: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`)
       }
 
       const data = await response.json()
