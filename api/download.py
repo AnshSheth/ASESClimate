@@ -1,19 +1,8 @@
-from fastapi import FastAPI, Body, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from http.server import BaseHTTPRequestHandler
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
+import json
 import io
-
-app = FastAPI()
-
-# Setup CORS - simpler configuration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins
-    allow_methods=["*"],  # Allow all methods
-    allow_headers=["*"],  # Allow all headers
-)
 
 def create_pdf(content: str) -> bytes:
     try:
@@ -80,33 +69,42 @@ def create_pdf(content: str) -> bytes:
         buffer.seek(0)
         return buffer.getvalue()
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error generating PDF: {str(e)}"
-        )
+        raise Exception(f"Error generating PDF: {str(e)}")
 
-@app.post("/download-pdf")
-async def download_pdf(content: str = Body(...)):
-    if not content or len(content.strip()) == 0:
-        raise HTTPException(
-            status_code=400,
-            detail="No content provided for PDF generation"
-        )
+class handler(BaseHTTPRequestHandler):
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', '*')
+        self.end_headers()
         
-    try:
-        pdf_content = create_pdf(content)
-        
-        return StreamingResponse(
-            io.BytesIO(pdf_content),
-            media_type="application/pdf",
-            headers={
-                "Content-Disposition": "attachment; filename=enhanced_worksheet.pdf"
-            }
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error generating PDF: {str(e)}"
-        ) 
+    def do_POST(self):
+        try:
+            # Get content length
+            content_length = int(self.headers.get('Content-Length', 0))
+            
+            # Read and parse JSON body
+            body = self.rfile.read(content_length)
+            content = json.loads(body)
+            
+            if not content or not isinstance(content, str):
+                self.send_error(400, "Invalid content format")
+                return
+                
+            # Generate PDF
+            pdf_content = create_pdf(content)
+            
+            # Send response
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/pdf')
+            self.send_header('Content-Disposition', 'attachment; filename=enhanced_worksheet.pdf')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            
+            self.wfile.write(pdf_content)
+            
+        except json.JSONDecodeError:
+            self.send_error(400, "Invalid JSON format")
+        except Exception as e:
+            self.send_error(500, f"Internal server error: {str(e)}") 

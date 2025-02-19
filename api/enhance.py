@@ -1,24 +1,13 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from http.server import BaseHTTPRequestHandler
 from rag_processor import DocumentEnhancer
 from pypdf import PdfReader
+import json
 import io
 import logging
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-app = FastAPI()
-
-# Setup CORS - simpler configuration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins
-    allow_methods=["*"],  # Allow all methods
-    allow_headers=["*"],  # Allow all headers
-)
 
 # Initialize RAG processor
 try:
@@ -28,59 +17,81 @@ except Exception as e:
     logger.error(f"Failed to initialize RAG processor: {str(e)}")
     raise
 
-@app.post("/enhance-document")
-async def enhance_document(
-    file: UploadFile = File(...),
-    subject_area: str = "biology"
-):
-    logger.info(f"Received request for file: {file.filename}")
+def parse_multipart(content_type, body):
+    """Parse multipart form data"""
+    boundary = content_type.split('boundary=')[1].encode()
+    parts = body.split(boundary)
     
-    try:
-        if not file:
-            logger.error("No file received")
-            raise HTTPException(status_code=400, detail="No file received")
+    # Find the file part
+    for part in parts:
+        if b'filename=' in part:
+            # Extract filename
+            filename = part.split(b'filename=')[1].split(b'\r\n')[0].strip(b'"').decode()
             
-        if not file.filename.endswith('.pdf'):
-            logger.error(f"Invalid file type: {file.filename}")
-            raise HTTPException(status_code=400, detail="Please upload a PDF file")
+            # Find the actual file content
+            file_content = part.split(b'\r\n\r\n')[1].rsplit(b'\r\n', 1)[0]
             
-        content = await file.read()
-        if not content:
-            logger.error("Empty file received")
-            raise HTTPException(status_code=400, detail="Empty file received")
-            
-        logger.info(f"File read successfully, size: {len(content)} bytes")
+            return filename, file_content
+    
+    return None, None
+
+class handler(BaseHTTPRequestHandler):
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', '*')
+        self.end_headers()
         
+    def do_POST(self):
         try:
-            pdf_file = io.BytesIO(content)
-            pdf_reader = PdfReader(pdf_file)
-            document_text = ""
-            for page in pdf_reader.pages:
-                document_text += page.extract_text() + "\n"
-            logger.info(f"PDF processed successfully, extracted {len(document_text)} characters")
+            # Get content length and type
+            content_length = int(self.headers.get('Content-Length', 0))
+            content_type = self.headers.get('Content-Type', '')
             
-            if not document_text.strip():
-                logger.error("No text could be extracted from PDF")
-                raise HTTPException(
-                    status_code=400,
-                    detail="Could not extract text from PDF. Please ensure the PDF contains text and not just images."
+            # Read the body
+            body = self.rfile.read(content_length)
+            
+            if 'multipart/form-data' in content_type:
+                filename, file_content = parse_multipart(content_type, body)
+                
+                if not filename or not file_content:
+                    self.send_error(400, "No file received")
+                    return
+                    
+                if not filename.endswith('.pdf'):
+                    self.send_error(400, "Please upload a PDF file")
+                    return
+                
+                # Process PDF
+                pdf_file = io.BytesIO(file_content)
+                pdf_reader = PdfReader(pdf_file)
+                document_text = ""
+                for page in pdf_reader.pages:
+                    document_text += page.extract_text() + "\n"
+                
+                if not document_text.strip():
+                    self.send_error(400, "Could not extract text from PDF")
+                    return
+                
+                # Process with RAG
+                enhanced_content = document_enhancer.enhance_document(
+                    document_text,
+                    "biology"
                 )
                 
-            # Process with RAG
-            enhanced_content = document_enhancer.enhance_document(
-                document_text,
-                subject_area
-            )
-            logger.info("Document enhanced successfully")
-            
-            return {"enhanced_content": enhanced_content}
-            
+                # Send response
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                
+                response = json.dumps({"enhanced_content": enhanced_content})
+                self.wfile.write(response.encode())
+                
+            else:
+                self.send_error(400, "Invalid content type")
+                
         except Exception as e:
-            logger.error(f"Error processing PDF: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(e)}")
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}") 
+            logger.error(f"Error: {str(e)}")
+            self.send_error(500, f"Internal server error: {str(e)}") 
