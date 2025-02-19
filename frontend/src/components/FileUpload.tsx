@@ -41,6 +41,15 @@ const formatContent = (content: string) => {
   });
 };
 
+const getApiUrl = (endpoint: string) => {
+  // In development, use the full URL with localhost
+  if (process.env.NODE_ENV === 'development') {
+    return `http://localhost:3002${endpoint}`
+  }
+  // In production (Vercel), use relative path
+  return endpoint
+}
+
 export default function FileUpload() {
   const [file, setFile] = React.useState<File | null>(null)
   const [enhancedContent, setEnhancedContent] = React.useState('')
@@ -74,7 +83,7 @@ export default function FileUpload() {
       formData.append('file', file)
       formData.append('subject_area', 'biology')
 
-      const response = await fetch('http://localhost:3002/api/enhance-document', {
+      const response = await fetch(getApiUrl('/api/enhance-document'), {
         method: 'POST',
         body: formData
       })
@@ -106,7 +115,7 @@ export default function FileUpload() {
     setError(null)
     
     try {
-      const response = await fetch('http://localhost:3002/api/download-pdf', {
+      const response = await fetch(getApiUrl('/api/download-pdf'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
