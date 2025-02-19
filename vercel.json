@@ -9,16 +9,14 @@
       "maxDuration": 10
     }
   },
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/enhance-document",
-      "methods": ["POST", "OPTIONS"],
-      "dest": "/api/enhance.py"
+      "source": "/api/enhance-document",
+      "destination": "/api/enhance.py"
     },
     {
-      "src": "/api/download-pdf",
-      "methods": ["POST", "OPTIONS"],
-      "dest": "/api/download.py"
+      "source": "/api/download-pdf",
+      "destination": "/api/download.py"
     }
   ],
   "headers": [
