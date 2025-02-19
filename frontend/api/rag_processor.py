@@ -2,13 +2,24 @@ from openai import OpenAI
 import os
 import numpy as np
 from dotenv import load_dotenv
+import logging
 
+# Set up logging
+logger = logging.getLogger(__name__)
+
+# Load environment variables from .env file
 load_dotenv()
+
+# Get API key from environment variable
+api_key = os.getenv('OPENAI_API_KEY')
+if not api_key:
+    raise ValueError("OPENAI_API_KEY environment variable is not set")
 
 class DocumentEnhancer:
     def __init__(self):
-        self.client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+        self.client = OpenAI(api_key=api_key)
         self.model_name = "gpt-3.5-turbo"
+        logger.info("DocumentEnhancer initialized successfully")
     
     def enhance_document(self, document_text: str, subject_area: str = None) -> str:
         # Execute enhancement using the model

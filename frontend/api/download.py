@@ -1,6 +1,6 @@
-from fastapi import FastAPI, Body, HTTPException
+from fastapi import FastAPI, Body, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 import io
@@ -10,7 +10,7 @@ app = FastAPI()
 # Setup CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins in development
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -93,12 +93,27 @@ def create_pdf(content: str) -> bytes:
             detail=f"Error generating PDF: {str(e)}"
         )
 
-@app.post("/download-pdf")
-async def download_pdf(content: str = Body(...)):
-    if not content or len(content.strip()) == 0:
-        raise HTTPException(
+@app.api_route("/api/download-pdf", methods=["POST", "OPTIONS"])
+async def download_pdf(request: Request, content: str = Body(None)):
+    # Handle OPTIONS request
+    if request.method == "OPTIONS":
+        return JSONResponse(
+            content={},
+            headers={
+                "Access-Control-Allow-Origin": "http://localhost:3000",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Credentials": "true",
+                "Access-Control-Max-Age": "86400",
+            }
+        )
+
+    # Handle POST request
+    if not content:
+        return JSONResponse(
             status_code=400,
-            detail="No content provided for PDF generation"
+            content={"error": "No content provided for PDF generation"},
+            headers={"Access-Control-Allow-Origin": "http://localhost:3000"}
         )
         
     try:
@@ -109,13 +124,14 @@ async def download_pdf(content: str = Body(...)):
             media_type="application/pdf",
             headers={
                 "Content-Disposition": "attachment; filename=enhanced_worksheet.pdf",
-                "Content-Type": "application/pdf"
+                "Content-Type": "application/pdf",
+                "Access-Control-Allow-Origin": "http://localhost:3000",
+                "Access-Control-Allow-Credentials": "true"
             }
         )
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(
+        return JSONResponse(
             status_code=500,
-            detail=f"Error generating PDF: {str(e)}"
+            content={"error": f"Error generating PDF: {str(e)}"},
+            headers={"Access-Control-Allow-Origin": "http://localhost:3000"}
         ) 

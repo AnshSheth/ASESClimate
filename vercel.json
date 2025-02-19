@@ -5,17 +5,20 @@
   "functions": {
     "api/*.py": {
       "runtime": "python3.9",
-      "memory": 1024
+      "memory": 1024,
+      "maxDuration": 10
     }
   },
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/enhance-document",
-      "destination": "/api/enhance.py"
+      "src": "/api/enhance-document",
+      "methods": ["POST", "OPTIONS"],
+      "dest": "/api/enhance.py"
     },
     {
-      "source": "/api/download-pdf",
-      "destination": "/api/download.py"
+      "src": "/api/download-pdf",
+      "methods": ["POST", "OPTIONS"],
+      "dest": "/api/download.py"
     }
   ],
   "headers": [
@@ -28,11 +31,15 @@
         },
         {
           "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
+          "value": "OPTIONS, POST"
         },
         {
           "key": "Access-Control-Allow-Headers",
-          "value": "X-Requested-With, Content-Type, Accept, Origin"
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Max-Age",
+          "value": "86400"
         }
       ]
     }

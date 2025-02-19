@@ -3,8 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from .rag_processor import DocumentEnhancer
 from pypdf import PdfReader
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
 import io
 import logging
 
@@ -17,9 +15,9 @@ app = FastAPI()
 # Setup CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
-    allow_methods=["POST", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -31,31 +29,27 @@ except Exception as e:
     logger.error(f"Failed to initialize RAG processor: {str(e)}")
     raise
 
-@app.options("/enhance-document")
-async def enhance_document_options():
-    headers = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Accept, Origin",
-        "Access-Control-Max-Age": "86400",
-    }
-    return JSONResponse(content={}, headers=headers)
-
-@app.post("/enhance-document")
+@app.api_route("/api/enhance-document", methods=["POST", "OPTIONS"])
 async def enhance_document(
     request: Request,
-    file: UploadFile = File(...),
+    file: UploadFile = File(None),
     subject_area: str = "biology"
 ):
-    logger.info(f"Received request for file: {file.filename}")
-    logger.info(f"Content-Type: {file.content_type}")
+    # Handle OPTIONS request
+    if request.method == "OPTIONS":
+        return JSONResponse(
+            content={},
+            headers={
+                "Access-Control-Allow-Origin": "http://localhost:3000",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Credentials": "true",
+                "Access-Control-Max-Age": "86400",
+            }
+        )
     
-    # CORS headers for the response
-    headers = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Accept, Origin",
-    }
+    # Handle POST request
+    logger.info(f"Received request for file: {file.filename if file else 'No file'}")
     
     try:
         if not file:
@@ -63,7 +57,7 @@ async def enhance_document(
             return JSONResponse(
                 status_code=400,
                 content={"error": "No file received"},
-                headers=headers
+                headers={"Access-Control-Allow-Origin": "http://localhost:3000"}
             )
             
         if not file.filename.endswith('.pdf'):
@@ -71,7 +65,7 @@ async def enhance_document(
             return JSONResponse(
                 status_code=400,
                 content={"error": "Please upload a PDF file"},
-                headers=headers
+                headers={"Access-Control-Allow-Origin": "http://localhost:3000"}
             )
             
         content = await file.read()
@@ -80,7 +74,7 @@ async def enhance_document(
             return JSONResponse(
                 status_code=400,
                 content={"error": "Empty file received"},
-                headers=headers
+                headers={"Access-Control-Allow-Origin": "http://localhost:3000"}
             )
             
         logger.info(f"File read successfully, size: {len(content)} bytes")
@@ -98,7 +92,7 @@ async def enhance_document(
                 return JSONResponse(
                     status_code=400,
                     content={"error": "Could not extract text from PDF. Please ensure the PDF contains text and not just images."},
-                    headers=headers
+                    headers={"Access-Control-Allow-Origin": "http://localhost:3000"}
                 )
                 
             # Process with RAG
@@ -110,7 +104,7 @@ async def enhance_document(
             
             return JSONResponse(
                 content={"enhanced_content": enhanced_content},
-                headers=headers
+                headers={"Access-Control-Allow-Origin": "http://localhost:3000"}
             )
             
         except Exception as e:
@@ -118,7 +112,7 @@ async def enhance_document(
             return JSONResponse(
                 status_code=500,
                 content={"error": f"Error processing PDF: {str(e)}"},
-                headers=headers
+                headers={"Access-Control-Allow-Origin": "http://localhost:3000"}
             )
             
     except Exception as e:
@@ -126,5 +120,5 @@ async def enhance_document(
         return JSONResponse(
             status_code=500,
             content={"error": f"An unexpected error occurred: {str(e)}"},
-            headers=headers
+            headers={"Access-Control-Allow-Origin": "http://localhost:3000"}
         ) 

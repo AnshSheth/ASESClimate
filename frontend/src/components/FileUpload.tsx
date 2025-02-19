@@ -74,7 +74,7 @@ export default function FileUpload() {
       formData.append('file', file)
       formData.append('subject_area', 'biology')
 
-      const response = await fetch('/api/enhance-document', {
+      const response = await fetch('http://localhost:3002/api/enhance-document', {
         method: 'POST',
         body: formData
       })
@@ -106,11 +106,10 @@ export default function FileUpload() {
     setError(null)
     
     try {
-      const response = await fetch('/api/download-pdf', {
+      const response = await fetch('http://localhost:3002/api/download-pdf', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/pdf'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(enhancedContent)
       })
