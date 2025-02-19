@@ -13,11 +13,11 @@
   "rewrites": [
     {
       "source": "/api/enhance-document",
-      "destination": "/api/enhance"
+      "destination": "/api/enhance.py"
     },
     {
       "source": "/api/download-pdf",
-      "destination": "/api/download"
+      "destination": "/api/download.py"
     }
   ],
   "headers": [
