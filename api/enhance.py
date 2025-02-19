@@ -31,47 +31,39 @@ except Exception as e:
     logger.error(f"Failed to initialize RAG processor: {str(e)}")
     raise
 
-@app.options("/api/enhance-document")
+@app.options("/enhance-document")
 async def enhance_document_options():
-    headers = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Accept, Origin",
-        "Access-Control-Max-Age": "86400",
-    }
-    return JSONResponse(content={}, headers=headers)
+    return JSONResponse(
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Max-Age": "86400",
+        }
+    )
 
-@app.post("/api/enhance-document")
+@app.post("/enhance-document")
 async def enhance_document(
     request: Request,
     file: UploadFile = File(...),
     subject_area: str = "biology"
 ):
     logger.info(f"Received request for file: {file.filename}")
-    logger.info(f"Content-Type: {file.content_type}")
-    
-    # CORS headers for the response
-    headers = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Accept, Origin",
-    }
     
     try:
         if not file:
             logger.error("No file received")
             return JSONResponse(
                 status_code=400,
-                content={"error": "No file received"},
-                headers=headers
+                content={"error": "No file received"}
             )
             
         if not file.filename.endswith('.pdf'):
             logger.error(f"Invalid file type: {file.filename}")
             return JSONResponse(
                 status_code=400,
-                content={"error": "Please upload a PDF file"},
-                headers=headers
+                content={"error": "Please upload a PDF file"}
             )
             
         content = await file.read()
@@ -79,8 +71,7 @@ async def enhance_document(
             logger.error("Empty file received")
             return JSONResponse(
                 status_code=400,
-                content={"error": "Empty file received"},
-                headers=headers
+                content={"error": "Empty file received"}
             )
             
         logger.info(f"File read successfully, size: {len(content)} bytes")
@@ -97,8 +88,7 @@ async def enhance_document(
                 logger.error("No text could be extracted from PDF")
                 return JSONResponse(
                     status_code=400,
-                    content={"error": "Could not extract text from PDF. Please ensure the PDF contains text and not just images."},
-                    headers=headers
+                    content={"error": "Could not extract text from PDF. Please ensure the PDF contains text and not just images."}
                 )
                 
             # Process with RAG
@@ -109,22 +99,19 @@ async def enhance_document(
             logger.info("Document enhanced successfully")
             
             return JSONResponse(
-                content={"enhanced_content": enhanced_content},
-                headers=headers
+                content={"enhanced_content": enhanced_content}
             )
             
         except Exception as e:
             logger.error(f"Error processing PDF: {str(e)}")
             return JSONResponse(
                 status_code=500,
-                content={"error": f"Error processing PDF: {str(e)}"},
-                headers=headers
+                content={"error": f"Error processing PDF: {str(e)}"}
             )
             
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
         return JSONResponse(
             status_code=500,
-            content={"error": f"An unexpected error occurred: {str(e)}"},
-            headers=headers
+            content={"error": f"An unexpected error occurred: {str(e)}"}
         ) 
