@@ -4,20 +4,17 @@
   "outputDirectory": ".next",
   "framework": "nextjs",
   "functions": {
-    "api/*.py": {
+    "api/enhance.py": {
       "runtime": "python3.9",
       "memory": 1024,
       "maxDuration": 30
     }
   },
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/enhance-document",
-      "destination": "/api/enhance.py"
-    },
-    {
-      "source": "/api/download-pdf",
-      "destination": "/api/download.py"
+      "src": "/api/enhance-document",
+      "dest": "/api/enhance.py",
+      "methods": ["POST", "OPTIONS"]
     }
   ],
   "headers": [
@@ -35,10 +32,6 @@
         {
           "key": "Access-Control-Allow-Headers",
           "value": "*"
-        },
-        {
-          "key": "Access-Control-Max-Age",
-          "value": "86400"
         }
       ]
     }
