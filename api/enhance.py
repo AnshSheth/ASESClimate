@@ -1,10 +1,8 @@
-from fastapi import FastAPI, UploadFile, File, Body, HTTPException, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from rag_processor import DocumentEnhancer
 from pypdf import PdfReader
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
 import io
 import logging
 
@@ -14,13 +12,12 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# Setup CORS
+# Setup CORS - simpler configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["POST", "OPTIONS"],
-    allow_headers=["*"],
+    allow_origins=["*"],  # Allow all origins
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
 )
 
 # Initialize RAG processor
@@ -31,21 +28,8 @@ except Exception as e:
     logger.error(f"Failed to initialize RAG processor: {str(e)}")
     raise
 
-@app.options("/enhance-document")
-async def enhance_document_options():
-    return JSONResponse(
-        content={},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Max-Age": "86400",
-        }
-    )
-
 @app.post("/enhance-document")
 async def enhance_document(
-    request: Request,
     file: UploadFile = File(...),
     subject_area: str = "biology"
 ):
@@ -54,25 +38,16 @@ async def enhance_document(
     try:
         if not file:
             logger.error("No file received")
-            return JSONResponse(
-                status_code=400,
-                content={"error": "No file received"}
-            )
+            raise HTTPException(status_code=400, detail="No file received")
             
         if not file.filename.endswith('.pdf'):
             logger.error(f"Invalid file type: {file.filename}")
-            return JSONResponse(
-                status_code=400,
-                content={"error": "Please upload a PDF file"}
-            )
+            raise HTTPException(status_code=400, detail="Please upload a PDF file")
             
         content = await file.read()
         if not content:
             logger.error("Empty file received")
-            return JSONResponse(
-                status_code=400,
-                content={"error": "Empty file received"}
-            )
+            raise HTTPException(status_code=400, detail="Empty file received")
             
         logger.info(f"File read successfully, size: {len(content)} bytes")
         
@@ -86,9 +61,9 @@ async def enhance_document(
             
             if not document_text.strip():
                 logger.error("No text could be extracted from PDF")
-                return JSONResponse(
+                raise HTTPException(
                     status_code=400,
-                    content={"error": "Could not extract text from PDF. Please ensure the PDF contains text and not just images."}
+                    detail="Could not extract text from PDF. Please ensure the PDF contains text and not just images."
                 )
                 
             # Process with RAG
@@ -98,20 +73,14 @@ async def enhance_document(
             )
             logger.info("Document enhanced successfully")
             
-            return JSONResponse(
-                content={"enhanced_content": enhanced_content}
-            )
+            return {"enhanced_content": enhanced_content}
             
         except Exception as e:
             logger.error(f"Error processing PDF: {str(e)}")
-            return JSONResponse(
-                status_code=500,
-                content={"error": f"Error processing PDF: {str(e)}"}
-            )
+            raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(e)}")
             
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
-        return JSONResponse(
-            status_code=500,
-            content={"error": f"An unexpected error occurred: {str(e)}"}
-        ) 
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}") 

@@ -1,19 +1,18 @@
-from fastapi import FastAPI, Body, HTTPException, Request
+from fastapi import FastAPI, Body, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import StreamingResponse
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 import io
 
 app = FastAPI()
 
-# Setup CORS
+# Setup CORS - simpler configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins in development
-    allow_credentials=True,
-    allow_methods=["POST", "OPTIONS"],
-    allow_headers=["*"],
+    allow_origins=["*"],  # Allow all origins
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
 )
 
 def create_pdf(content: str) -> bytes:
@@ -21,20 +20,16 @@ def create_pdf(content: str) -> bytes:
         buffer = io.BytesIO()
         c = canvas.Canvas(buffer, pagesize=letter)
         width, height = letter
-        y = height - 40  # Start 40 points down from top
+        y = height - 40
         
-        # Font configurations
-        c.setFont("Helvetica-Bold", 16)  # Default font for headers
+        c.setFont("Helvetica-Bold", 16)
         
-        # Split content into lines
         lines = content.split('\n')
         for line in lines:
-            # Skip empty lines but add spacing
             if not line.strip():
                 y -= 15
                 continue
                 
-            # Handle double asterisk sections (headers)
             if line.startswith('**') and line.endswith('**'):
                 c.setFont("Helvetica-Bold", 14)
                 text = line.replace('**', '')
@@ -42,7 +37,6 @@ def create_pdf(content: str) -> bytes:
                 y -= 25
                 c.setFont("Helvetica", 12)
                 
-            # Handle questions (lines starting with numbers)
             elif line.strip() and line[0].isdigit() and '. ' in line:
                 c.setFont("Helvetica", 12)
                 words = line.split()
@@ -61,7 +55,6 @@ def create_pdf(content: str) -> bytes:
                     c.drawString(x, y, ' '.join(current_line))
                 y -= 20
                 
-            # Regular text
             else:
                 c.setFont("Helvetica", 12)
                 words = line.split()
@@ -78,7 +71,6 @@ def create_pdf(content: str) -> bytes:
                     c.drawString(40, y, ' '.join(current_line))
                 y -= 15
             
-            # Check if we need a new page
             if y < 40:
                 c.showPage()
                 y = height - 40
@@ -92,18 +84,6 @@ def create_pdf(content: str) -> bytes:
             status_code=500,
             detail=f"Error generating PDF: {str(e)}"
         )
-
-@app.options("/download-pdf")
-async def download_pdf_options():
-    return JSONResponse(
-        content={},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Max-Age": "86400",
-        }
-    )
 
 @app.post("/download-pdf")
 async def download_pdf(content: str = Body(...)):
@@ -120,8 +100,7 @@ async def download_pdf(content: str = Body(...)):
             io.BytesIO(pdf_content),
             media_type="application/pdf",
             headers={
-                "Content-Disposition": "attachment; filename=enhanced_worksheet.pdf",
-                "Content-Type": "application/pdf"
+                "Content-Disposition": "attachment; filename=enhanced_worksheet.pdf"
             }
         )
     except HTTPException:
