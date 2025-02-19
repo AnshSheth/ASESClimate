@@ -85,12 +85,22 @@ export default function FileUpload() {
 
       const response = await fetch(getApiUrl('/api/enhance-document'), {
         method: 'POST',
-        body: formData
+        body: formData,
+        headers: {
+          // Don't set Content-Type header - browser will set it with boundary
+          'Accept': 'application/json',
+        }
       })
 
       if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`Error: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`)
+        let errorMessage = `Error: ${response.status} ${response.statusText}`
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch {
+          // If we can't parse the error JSON, use the default message
+        }
+        throw new Error(errorMessage)
       }
 
       const data = await response.json()

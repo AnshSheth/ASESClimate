@@ -1,4 +1,5 @@
 {
+  "version": 2,
   "buildCommand": "next build",
   "outputDirectory": ".next",
   "framework": "nextjs",
@@ -12,11 +13,11 @@
   "rewrites": [
     {
       "source": "/api/enhance-document",
-      "destination": "/api/enhance.py"
+      "destination": "/api/enhance"
     },
     {
       "source": "/api/download-pdf",
-      "destination": "/api/download.py"
+      "destination": "/api/download"
     }
   ],
   "headers": [
@@ -29,7 +30,7 @@
         },
         {
           "key": "Access-Control-Allow-Methods",
-          "value": "OPTIONS, POST"
+          "value": "GET, POST, OPTIONS"
         },
         {
           "key": "Access-Control-Allow-Headers",
