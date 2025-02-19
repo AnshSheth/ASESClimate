@@ -86,11 +86,18 @@ export default function FileUpload() {
       const response = await fetch(getApiUrl('/api/enhance-document'), {
         method: 'POST',
         body: formData,
+        // Do not set any Content-Type header - browser will set it automatically with boundary
         headers: {
-          // Don't set Content-Type header - browser will set it with boundary
-          'Accept': 'application/json',
-        }
+          'Accept': 'application/json'
+        },
+        // Important: include credentials and mode
+        credentials: 'same-origin',
+        mode: 'cors'
       })
+
+      // Log response details for debugging
+      console.log('Response status:', response.status)
+      console.log('Response headers:', response.headers)
 
       if (!response.ok) {
         let errorMessage = `Error: ${response.status} ${response.statusText}`
