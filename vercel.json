@@ -1,14 +1,14 @@
 {
-  "buildCommand": "cd frontend && npm run build",
-  "outputDirectory": "frontend/.next",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
   "rewrites": [
     {
       "source": "/api/enhance-document",
-      "destination": "/api/enhance"
+      "destination": "api/enhance"
     },
     {
       "source": "/api/download-pdf",
-      "destination": "/api/download"
+      "destination": "api/download"
     }
   ],
   "functions": {

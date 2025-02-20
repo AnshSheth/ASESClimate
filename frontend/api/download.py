@@ -1,40 +1,24 @@
-from fastapi import FastAPI, Body, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, JSONResponse
+from http.server import BaseHTTPRequestHandler
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
+import json
 import io
-
-app = FastAPI()
-
-# Setup CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 def create_pdf(content: str) -> bytes:
     try:
         buffer = io.BytesIO()
         c = canvas.Canvas(buffer, pagesize=letter)
         width, height = letter
-        y = height - 40  # Start 40 points down from top
+        y = height - 40
         
-        # Font configurations
-        c.setFont("Helvetica-Bold", 16)  # Default font for headers
+        c.setFont("Helvetica-Bold", 16)
         
-        # Split content into lines
         lines = content.split('\n')
         for line in lines:
-            # Skip empty lines but add spacing
             if not line.strip():
                 y -= 15
                 continue
                 
-            # Handle double asterisk sections (headers)
             if line.startswith('**') and line.endswith('**'):
                 c.setFont("Helvetica-Bold", 14)
                 text = line.replace('**', '')
@@ -42,7 +26,6 @@ def create_pdf(content: str) -> bytes:
                 y -= 25
                 c.setFont("Helvetica", 12)
                 
-            # Handle questions (lines starting with numbers)
             elif line.strip() and line[0].isdigit() and '. ' in line:
                 c.setFont("Helvetica", 12)
                 words = line.split()
@@ -61,7 +44,6 @@ def create_pdf(content: str) -> bytes:
                     c.drawString(x, y, ' '.join(current_line))
                 y -= 20
                 
-            # Regular text
             else:
                 c.setFont("Helvetica", 12)
                 words = line.split()
@@ -78,7 +60,6 @@ def create_pdf(content: str) -> bytes:
                     c.drawString(40, y, ' '.join(current_line))
                 y -= 15
             
-            # Check if we need a new page
             if y < 40:
                 c.showPage()
                 y = height - 40
@@ -88,50 +69,42 @@ def create_pdf(content: str) -> bytes:
         buffer.seek(0)
         return buffer.getvalue()
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error generating PDF: {str(e)}"
-        )
+        raise Exception(f"Error generating PDF: {str(e)}")
 
-@app.api_route("/api/download-pdf", methods=["POST", "OPTIONS"])
-async def download_pdf(request: Request, content: str = Body(None)):
-    # Handle OPTIONS request
-    if request.method == "OPTIONS":
-        return JSONResponse(
-            content={},
-            headers={
-                "Access-Control-Allow-Origin": "http://localhost:3000",
-                "Access-Control-Allow-Methods": "POST, OPTIONS",
-                "Access-Control-Allow-Headers": "*",
-                "Access-Control-Allow-Credentials": "true",
-                "Access-Control-Max-Age": "86400",
-            }
-        )
-
-    # Handle POST request
-    if not content:
-        return JSONResponse(
-            status_code=400,
-            content={"error": "No content provided for PDF generation"},
-            headers={"Access-Control-Allow-Origin": "http://localhost:3000"}
-        )
+class handler(BaseHTTPRequestHandler):
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', '*')
+        self.end_headers()
         
-    try:
-        pdf_content = create_pdf(content)
-        
-        return StreamingResponse(
-            io.BytesIO(pdf_content),
-            media_type="application/pdf",
-            headers={
-                "Content-Disposition": "attachment; filename=enhanced_worksheet.pdf",
-                "Content-Type": "application/pdf",
-                "Access-Control-Allow-Origin": "http://localhost:3000",
-                "Access-Control-Allow-Credentials": "true"
-            }
-        )
-    except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"error": f"Error generating PDF: {str(e)}"},
-            headers={"Access-Control-Allow-Origin": "http://localhost:3000"}
-        ) 
+    def do_POST(self):
+        try:
+            # Get content length
+            content_length = int(self.headers.get('Content-Length', 0))
+            
+            # Read and parse JSON body
+            body = self.rfile.read(content_length)
+            content = json.loads(body)
+            
+            if not content or not isinstance(content, str):
+                self.send_error(400, "Invalid content format")
+                return
+                
+            # Generate PDF
+            pdf_content = create_pdf(content)
+            
+            # Send response
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/pdf')
+            self.send_header('Content-Disposition', 'attachment; filename=enhanced_worksheet.pdf')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            
+            self.wfile.write(pdf_content)
+            
+        except json.JSONDecodeError:
+            self.send_error(400, "Invalid JSON format")
+        except Exception as e:
+            self.send_error(500, f"Internal server error: {str(e)}") 
