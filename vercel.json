@@ -4,16 +4,23 @@
   "rewrites": [
     {
       "source": "/api/enhance-document",
-      "destination": "api/enhance"
+      "destination": "/api/enhance"
     },
     {
       "source": "/api/download-pdf",
-      "destination": "api/download"
+      "destination": "/api/download"
     }
   ],
   "functions": {
-    "api/*.py": {
+    "api/enhance.py": {
       "runtime": "python3.9",
+      "handler": "handler",
+      "memory": 1024,
+      "maxDuration": 30
+    },
+    "api/download.py": {
+      "runtime": "python3.9",
+      "handler": "handler",
       "memory": 1024,
       "maxDuration": 30
     }
