@@ -14,13 +14,11 @@
   "functions": {
     "api/enhance.py": {
       "runtime": "python3.9",
-      "handler": "handler",
       "memory": 1024,
       "maxDuration": 30
     },
     "api/download.py": {
       "runtime": "python3.9",
-      "handler": "handler",
       "memory": 1024,
       "maxDuration": 30
     }

@@ -1,19 +1,9 @@
-from http.server import BaseHTTPRequestHandler
 import json
 import io
 from pypdf import PdfReader
 from rag_processor import DocumentEnhancer
 import logging
 from dotenv import load_dotenv
-from typing import Union
-from http.client import HTTPException
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
-
-from vercel_edge import Response
 
 # Load environment variables
 load_dotenv()
@@ -25,65 +15,83 @@ logger = logging.getLogger(__name__)
 # Initialize RAG processor
 document_enhancer = DocumentEnhancer()
 
-class handler(BaseHTTPRequestHandler):
-    def do_OPTIONS(self):
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', '*')
-        self.send_header('Access-Control-Max-Age', '86400')
-        self.end_headers()
-    
-    def do_POST(self):
-        try:
-            # Get content length
-            content_length = int(self.headers.get('Content-Length', 0))
-            if content_length == 0:
-                self._send_error(400, "No file uploaded")
-                return
+def handler(request, response):
+    if request.method == 'OPTIONS':
+        response.status = 200
+        response.headers = {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Max-Age': '86400'
+        }
+        return response
 
-            # Read form data
-            form_data = self.rfile.read(content_length)
-            
-            # Process PDF
-            try:
-                pdf_file = io.BytesIO(form_data)
-                pdf_reader = PdfReader(pdf_file)
-                document_text = ""
-                for page in pdf_reader.pages:
-                    document_text += page.extract_text() + "\n"
-                
-                if not document_text.strip():
-                    self._send_error(400, "Could not extract text from PDF")
-                    return
-                
-                # Process with RAG
-                enhanced_content = document_enhancer.enhance_document(
-                    document_text,
-                    "biology"  # Default subject
-                )
-                
-                # Send successful response
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.end_headers()
-                
-                response_data = json.dumps({"enhanced_content": enhanced_content})
-                self.wfile.write(response_data.encode('utf-8'))
-                
-            except Exception as e:
-                logger.error(f"Error processing PDF: {str(e)}")
-                self._send_error(500, f"Error processing PDF: {str(e)}")
-                
+    if request.method != 'POST':
+        response.status = 405
+        response.headers = {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+        }
+        return response.json({'error': 'Method not allowed'})
+
+    try:
+        form = request.form
+        if not form or 'file' not in form:
+            response.status = 400
+            response.headers = {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            }
+            return response.json({'error': 'No file uploaded'})
+
+        file = form['file']
+        content = file.read()
+
+        # Process PDF
+        try:
+            pdf_file = io.BytesIO(content)
+            pdf_reader = PdfReader(pdf_file)
+            document_text = ""
+            for page in pdf_reader.pages:
+                document_text += page.extract_text() + "\n"
+
+            if not document_text.strip():
+                response.status = 400
+                response.headers = {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                }
+                return response.json({'error': 'Could not extract text from PDF'})
+
+            # Process with RAG
+            enhanced_content = document_enhancer.enhance_document(
+                document_text,
+                "biology"  # Default subject
+            )
+
+            response.status = 200
+            response.headers = {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': '*'
+            }
+            return response.json({'enhanced_content': enhanced_content})
+
         except Exception as e:
-            logger.error(f"Error: {str(e)}")
-            self._send_error(500, f"Internal server error: {str(e)}")
-    
-    def _send_error(self, status_code: int, message: str):
-        self.send_response(status_code)
-        self.send_header('Content-Type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.end_headers()
-        error_response = json.dumps({"error": message})
-        self.wfile.write(error_response.encode('utf-8')) 
+            logger.error(f"Error processing PDF: {str(e)}")
+            response.status = 500
+            response.headers = {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            }
+            return response.json({'error': f'Error processing PDF: {str(e)}'})
+
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        response.status = 500
+        response.headers = {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+        }
+        return response.json({'error': f'Internal server error: {str(e)}'}) 
