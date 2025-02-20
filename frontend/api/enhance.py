@@ -1,3 +1,5 @@
+from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import json
 import io
 from pypdf import PdfReader
@@ -12,40 +14,32 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Initialize FastAPI app
+app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Initialize RAG processor
 document_enhancer = DocumentEnhancer()
 
-def handler(request, response):
-    if request.method == 'OPTIONS':
-        response.status = 200
-        response.headers = {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': '*',
-            'Access-Control-Max-Age': '86400'
-        }
-        return response
+@app.options("/enhance-document")
+async def options_handler():
+    return {}
 
-    if request.method != 'POST':
-        response.status = 405
-        response.headers = {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-        }
-        return response.json({'error': 'Method not allowed'})
-
+@app.post("/enhance-document")
+async def enhance_document(file: UploadFile = File(...)):
     try:
-        form = request.form
-        if not form or 'file' not in form:
-            response.status = 400
-            response.headers = {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            }
-            return response.json({'error': 'No file uploaded'})
+        if not file:
+            raise HTTPException(status_code=400, detail="No file uploaded")
 
-        file = form['file']
-        content = file.read()
+        content = await file.read()
 
         # Process PDF
         try:
@@ -56,12 +50,7 @@ def handler(request, response):
                 document_text += page.extract_text() + "\n"
 
             if not document_text.strip():
-                response.status = 400
-                response.headers = {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                }
-                return response.json({'error': 'Could not extract text from PDF'})
+                raise HTTPException(status_code=400, detail="Could not extract text from PDF")
 
             # Process with RAG
             enhanced_content = document_enhancer.enhance_document(
@@ -69,29 +58,16 @@ def handler(request, response):
                 "biology"  # Default subject
             )
 
-            response.status = 200
-            response.headers = {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': '*'
-            }
-            return response.json({'enhanced_content': enhanced_content})
+            return {"enhanced_content": enhanced_content}
 
         except Exception as e:
             logger.error(f"Error processing PDF: {str(e)}")
-            response.status = 500
-            response.headers = {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            }
-            return response.json({'error': f'Error processing PDF: {str(e)}'})
+            raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(e)}")
 
     except Exception as e:
         logger.error(f"Error: {str(e)}")
-        response.status = 500
-        response.headers = {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-        }
-        return response.json({'error': f'Internal server error: {str(e)}'}) 
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=3000) 

@@ -10,31 +10,41 @@ cleanup() {
 # Set up cleanup on script exit
 trap cleanup EXIT
 
-# Install Python dependencies if requirements.txt exists
-if [ -f "requirements.txt" ]; then
-    echo "Installing Python dependencies..."
-    pip3 install -r requirements.txt
+# Create Python virtual environment if it doesn't exist
+if [ ! -d "venv" ]; then
+    echo "Creating Python virtual environment..."
+    python3 -m venv venv
 fi
+
+# Activate virtual environment
+source venv/bin/activate
+
+# Install Python dependencies
+echo "Installing Python dependencies..."
+pip install -r requirements.txt
 
 # Install frontend dependencies
 echo "Installing frontend dependencies..."
 cd frontend
 npm install
-cd ..
 
-echo "Starting backend server..."
-cd api
-python3 -m uvicorn enhance:app --host 0.0.0.0 --port 3002 &
-cd ..
+# Start the development servers
+echo "Starting development servers..."
 
-echo "Starting frontend..."
-cd frontend
+# Start the frontend development server
+echo "Starting frontend on http://localhost:3000"
 npm run dev &
 
-echo "Both servers are running!"
+# Start the Python API server
+echo "Starting API server on http://localhost:3002"
+cd api
+python3 -m uvicorn enhance:app --reload --host 0.0.0.0 --port 3002 &
+cd ..
+
+echo "✨ Development servers are running!"
 echo "Frontend: http://localhost:3000"
-echo "Backend: http://localhost:3002"
-echo "Press Ctrl+C to stop both servers"
+echo "API: http://localhost:3002"
+echo "Press Ctrl+C to stop all servers"
 
 # Wait for Ctrl+C
 wait 
