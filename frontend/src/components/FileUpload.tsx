@@ -42,12 +42,8 @@ const formatContent = (content: string) => {
 };
 
 const getApiUrl = (endpoint: string) => {
-  // In development, use the full URL with localhost
-  if (process.env.NODE_ENV === 'development') {
-    return `http://localhost:3002${endpoint}`
-  }
-  // In production (Vercel), use relative path
-  return endpoint
+  // Always return the relative path in production
+  return endpoint;
 }
 
 export default function FileUpload() {
@@ -70,45 +66,69 @@ export default function FileUpload() {
     }
   }
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      try {
+        const selectedFile = e.target.files[0]
+        validateFile(selectedFile)
+        setFile(selectedFile)
+        setError(null)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Invalid file')
+        setFile(null)
+      }
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (!file) return
+    if (!file) {
+      setError('Please select a file first')
+      return
+    }
 
     setLoading(true)
     setError(null)
-    const formData = new FormData()
     
-    try {
-      validateFile(file)
-      formData.append('file', file)
-      formData.append('subject_area', 'biology')
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('subject_area', 'biology')
 
-      const response = await fetch(getApiUrl('/api/enhance-document'), {
+    try {
+      const response = await fetch('/api/enhance-document', {
         method: 'POST',
-        body: formData
+        body: formData,
+        headers: {
+          'Accept': 'application/json'
+        }
       })
 
-      // Log response details for debugging
-      console.log('Response status:', response.status)
-      console.log('Response headers:', response.headers)
+      if (response.status === 405) {
+        throw new Error('API endpoint not found or method not allowed')
+      }
 
       if (!response.ok) {
-        let errorMessage = `Error: ${response.status} ${response.statusText}`
-        try {
+        const contentType = response.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
           const errorData = await response.json()
-          errorMessage = errorData.error || errorMessage
-        } catch {
-          // If we can't parse the error JSON, use the default message
+          throw new Error(errorData.error || `Server error: ${response.status}`)
+        } else {
+          throw new Error(`Server error: ${response.status}`)
         }
-        throw new Error(errorMessage)
+      }
+
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Invalid response format from server')
       }
 
       const data = await response.json()
-      if (data.error) {
-        throw new Error(data.error)
+      if (!data.enhanced_content) {
+        throw new Error('Invalid response data from server')
       }
-      
+
       setEnhancedContent(data.enhanced_content)
+      setError(null)
     } catch (error) {
       console.error('Error:', error)
       setError(error instanceof Error ? error.message : 'An unexpected error occurred')
@@ -119,16 +139,18 @@ export default function FileUpload() {
   }
 
   const handleDownloadPDF = async () => {
-    if (!enhancedContent) return
-    
+    if (!enhancedContent) {
+      setError('No content to download')
+      return
+    }
+
     setDownloadLoading(true)
-    setError(null)
-    
     try {
-      const response = await fetch(getApiUrl('/api/download-pdf'), {
+      const response = await fetch('/api/download-pdf', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/pdf'
         },
         body: JSON.stringify(enhancedContent)
       })
@@ -147,7 +169,6 @@ export default function FileUpload() {
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
     } catch (error) {
-      console.error('Error downloading PDF:', error)
       setError(error instanceof Error ? error.message : 'Failed to download PDF')
     } finally {
       setDownloadLoading(false)
@@ -161,11 +182,9 @@ export default function FileUpload() {
           <input
             type="file"
             accept=".pdf,.docx"
-            onChange={(e) => {
-              setFile(e.target.files?.[0] || null)
-              setError(null)
-            }}
+            onChange={handleFileChange}
             className="w-full"
+            disabled={loading}
           />
           <p className="mt-2 text-sm text-ecodify-earth/60 group-hover:text-ecodify-earth/80">
             Upload a PDF or DOCX file (max 10MB)
