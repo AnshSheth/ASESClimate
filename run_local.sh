@@ -38,7 +38,7 @@ npm run dev &
 # Start the Python API server
 echo "Starting API server on http://localhost:3002"
 cd api
-python3 -m uvicorn enhance:app --reload --host 0.0.0.0 --port 3002 &
+PYTHONPATH=$PYTHONPATH:$(pwd) uvicorn enhance:app --reload --host 0.0.0.0 --port 3002 &
 cd ..
 
 echo "✨ Development servers are running!"

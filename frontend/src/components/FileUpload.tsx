@@ -42,7 +42,11 @@ const formatContent = (content: string) => {
 };
 
 const getApiUrl = (endpoint: string) => {
-  // Always return the relative path in production
+  // Use the API server URL in development
+  if (process.env.NODE_ENV === 'development') {
+    return `http://localhost:3002${endpoint}`;
+  }
+  // Use relative path in production
   return endpoint;
 }
 
@@ -95,34 +99,29 @@ export default function FileUpload() {
     formData.append('subject_area', 'biology')
 
     try {
-      const response = await fetch('/api/enhance-document', {
+      console.log('Making API request to:', getApiUrl('/api/enhance-document'))
+      const response = await fetch(getApiUrl('/api/enhance-document'), {
         method: 'POST',
         body: formData,
-        headers: {
-          'Accept': 'application/json'
-        }
       })
 
-      if (response.status === 405) {
-        throw new Error('API endpoint not found or method not allowed')
-      }
-
+      console.log('Response status:', response.status)
+      
       if (!response.ok) {
         const contentType = response.headers.get('content-type')
         if (contentType && contentType.includes('application/json')) {
           const errorData = await response.json()
-          throw new Error(errorData.error || `Server error: ${response.status}`)
+          throw new Error(errorData.detail || errorData.error || `Server error: ${response.status}`)
         } else {
+          const errorText = await response.text()
+          console.error('Error response:', errorText)
           throw new Error(`Server error: ${response.status}`)
         }
       }
 
-      const contentType = response.headers.get('content-type')
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Invalid response format from server')
-      }
-
       const data = await response.json()
+      console.log('Response data:', data)
+      
       if (!data.enhanced_content) {
         throw new Error('Invalid response data from server')
       }
@@ -146,7 +145,7 @@ export default function FileUpload() {
 
     setDownloadLoading(true)
     try {
-      const response = await fetch('/api/download-pdf', {
+      const response = await fetch(getApiUrl('/api/download-pdf'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
