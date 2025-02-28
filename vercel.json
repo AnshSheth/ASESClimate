@@ -1,14 +1,17 @@
 {
+  "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/enhance-document",
-      "destination": "/api/enhance"
+      "src": "/api/enhance-document",
+      "dest": "/api/enhance.py",
+      "methods": ["POST", "OPTIONS"]
     },
     {
-      "source": "/api/download-pdf",
-      "destination": "/api/download"
+      "src": "/api/download-pdf",
+      "dest": "/api/download.py",
+      "methods": ["POST", "OPTIONS"]
     }
   ],
   "functions": {
