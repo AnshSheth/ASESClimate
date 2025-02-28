@@ -150,6 +150,17 @@ async def health_check():
 
 # Handler for Vercel serverless function
 def handler(request):
+    if request.method == "OPTIONS":
+        # Handle preflight requests
+        headers = {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Max-Age": "86400",  # 24 hours
+        }
+        return Response(status_code=200, headers=headers)
+    
+    # For actual requests, pass to FastAPI
     return app(request)
 
 if __name__ == "__main__":
