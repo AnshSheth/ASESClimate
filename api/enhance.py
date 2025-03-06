@@ -3,7 +3,14 @@ import json
 import io
 import logging
 from pypdf import PdfReader
-from rag_processor import DocumentEnhancer
+try:
+    from rag_processor import DocumentEnhancer
+except ImportError:
+    # Try alternative import paths
+    try:
+        from api.rag_processor import DocumentEnhancer
+    except ImportError:
+        from .rag_processor import DocumentEnhancer
 import os
 from dotenv import load_dotenv
 

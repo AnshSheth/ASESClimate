@@ -18,9 +18,12 @@ FROM python:3.9-slim
 # Set working directory
 WORKDIR /app
 
-# Copy Python requirements
+# Copy Python requirements and API files
 COPY requirements.txt .
 COPY api/ ./api/
+
+# Make sure rag_processor.py is in the right place
+COPY api/rag_processor.py ./
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
@@ -32,6 +35,7 @@ COPY --from=frontend /app/frontend/package.json .
 
 # Set environment variables
 ENV NODE_ENV=production
+ENV PYTHONPATH=/app
 
 # Start command
 CMD ["python", "-m", "uvicorn", "api.enhance:app", "--host", "0.0.0.0", "--port", "3000"]
