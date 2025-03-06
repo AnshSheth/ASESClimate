@@ -16,12 +16,14 @@
     "api/enhance.py": {
       "runtime": "python3.9",
       "memory": 1024,
-      "maxDuration": 60
+      "maxDuration": 60,
+      "handler": "handler"
     },
     "api/download.py": {
       "runtime": "python3.9",
       "memory": 1024,
-      "maxDuration": 60
+      "maxDuration": 60,
+      "handler": "handler"
     }
   },
   "headers": [

@@ -91,55 +91,80 @@ def create_pdf(content: str) -> bytes:
         logger.error(f"Error generating PDF: {str(e)}")
         raise Exception(f"Error generating PDF: {str(e)}")
 
-class handler(BaseHTTPRequestHandler):
-    def do_OPTIONS(self):
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Accept')
-        self.send_header('Access-Control-Max-Age', '86400')  # 24 hours
-        self.end_headers()
+def handler(event, context):
+    """Main handler function for Vercel serverless function"""
+    logger.info(f"Received request: {event.get('method')} {event.get('path')}")
     
-    def do_POST(self):
+    # Handle OPTIONS request (CORS preflight)
+    if event.get('method') == 'OPTIONS':
+        return {
+            "statusCode": 200,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Accept",
+                "Access-Control-Max-Age": "86400"
+            },
+            "body": ""
+        }
+    
+    # Handle POST request
+    if event.get('method') == 'POST':
         try:
-            # Get content length
-            content_length = int(self.headers['Content-Length'])
-            
-            # Read request body
-            request_body = self.rfile.read(content_length)
+            # Get request body
+            body = event.get('body', '')
             
             # Parse JSON content
             try:
-                content = request_body.decode('utf-8')
+                if isinstance(body, bytes):
+                    body = body.decode('utf-8')
+                
+                content = body
                 logger.info(f"Received content for PDF generation, length: {len(content)}")
                 
                 # Generate PDF
                 pdf_content = create_pdf(content)
                 
                 # Send response
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/pdf')
-                self.send_header('Content-Disposition', 'attachment; filename=enhanced_worksheet.pdf')
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.send_header('Content-Length', str(len(pdf_content)))
-                self.end_headers()
-                
-                # Write PDF content
-                self.wfile.write(pdf_content)
-                logger.info("PDF generated and sent successfully")
+                return {
+                    "statusCode": 200,
+                    "headers": {
+                        "Content-Type": "application/pdf",
+                        "Content-Disposition": "attachment; filename=enhanced_worksheet.pdf",
+                        "Access-Control-Allow-Origin": "*"
+                    },
+                    "body": pdf_content,
+                    "isBase64Encoded": True
+                }
                 
             except json.JSONDecodeError:
                 logger.error("Invalid JSON in request body")
-                self.send_response(400)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.end_headers()
-                self.wfile.write(json.dumps({"error": "Invalid JSON"}).encode())
+                return {
+                    "statusCode": 400,
+                    "headers": {
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*"
+                    },
+                    "body": json.dumps({"error": "Invalid JSON"})
+                }
                 
         except Exception as e:
             logger.error(f"Error handling request: {str(e)}")
-            self.send_response(500)
-            self.send_header('Content-Type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": str(e)}).encode()) 
+            return {
+                "statusCode": 500,
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*"
+                },
+                "body": json.dumps({"error": str(e)})
+            }
+    
+    # Handle unsupported methods
+    return {
+        "statusCode": 405,
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+        },
+        "body": json.dumps({"error": "Method not allowed"})
+    } 
