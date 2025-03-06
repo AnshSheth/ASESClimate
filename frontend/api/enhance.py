@@ -270,16 +270,75 @@ class handler(BaseHTTPRequestHandler):
                 return
             
             # Process the document
-            result = process_document(file_content, filename)
-            
-            # Send response
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            
-            # Write response
-            self.wfile.write(json.dumps(result).encode())
+            try:
+                # Validate file extension
+                file_ext = '.' + filename.split('.')[-1].lower()
+                if file_ext not in ALLOWED_EXTENSIONS:
+                    self.send_response(400)
+                    self.send_header('Content-Type', 'application/json')
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"error": f"File type not allowed. Please upload one of: {', '.join(ALLOWED_EXTENSIONS)}"}).encode())
+                    return
+                
+                # Process PDF files
+                if filename.endswith('.pdf'):
+                    try:
+                        pdf_file = io.BytesIO(file_content)
+                        pdf_reader = PdfReader(pdf_file)
+                        document_text = ""
+                        for page in pdf_reader.pages:
+                            document_text += page.extract_text() + "\n"
+                    except Exception as e:
+                        logger.error(f"Error reading PDF: {str(e)}")
+                        self.send_response(400)
+                        self.send_header('Content-Type', 'application/json')
+                        self.send_header('Access-Control-Allow-Origin', '*')
+                        self.end_headers()
+                        self.wfile.write(json.dumps({"error": f"Error reading PDF file: {str(e)}"}).encode())
+                        return
+                # Process DOCX files (simplified for this example)
+                elif filename.endswith('.docx'):
+                    try:
+                        document_text = file_content.decode('utf-8')
+                    except UnicodeDecodeError:
+                        logger.error("Error decoding DOCX file")
+                        self.send_response(400)
+                        self.send_header('Content-Type', 'application/json')
+                        self.send_header('Access-Control-Allow-Origin', '*')
+                        self.end_headers()
+                        self.wfile.write(json.dumps({"error": "Error reading DOCX file. Please ensure it's a valid document."}).encode())
+                        return
+                
+                # Process with RAG
+                try:
+                    enhanced_content = document_enhancer.enhance_document(document_text)
+                    logger.info("Document enhancement successful")
+                    
+                    # Send successful response
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"enhanced_content": enhanced_content}).encode())
+                    
+                except Exception as e:
+                    logger.error(f"Error enhancing document: {str(e)}")
+                    self.send_response(500)
+                    self.send_header('Content-Type', 'application/json')
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"error": f"Error enhancing document: {str(e)}"}).encode())
+                    return
+                
+            except Exception as e:
+                logger.error(f"Error processing document: {str(e)}")
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": f"Error processing document: {str(e)}"}).encode())
+                return
             
         except Exception as e:
             logger.error(f"Error handling request: {str(e)}")

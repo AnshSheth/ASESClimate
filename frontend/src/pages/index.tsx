@@ -1,5 +1,5 @@
 import React from 'react'
-import FileUpload from '../components/FileUpload'
+import FileUploadSupabase from '../components/FileUploadSupabase'
 import Head from 'next/head'
 
 export default function Home() {
@@ -34,7 +34,7 @@ export default function Home() {
                 <div className="h-px flex-1 bg-gradient-to-l from-transparent to-ecodify-sage/30"></div>
               </div>
               
-              <FileUpload />
+              <FileUploadSupabase />
             </div>
           </div>
 

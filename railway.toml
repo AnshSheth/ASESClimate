@@ -1,8 +1,0 @@
-[build]
-builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
-
-[deploy]
-startCommand = "python -m uvicorn api.enhance:app --host 0.0.0.0 --port 3000"
-healthcheckPath = "/health"
-healthcheckTimeout = 300
