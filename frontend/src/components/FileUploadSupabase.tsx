@@ -167,8 +167,22 @@ const FileUploadSupabase: React.FC = () => {
         throw new Error(`Error generating PDF: ${response.statusText || errorText}`);
       }
       
-      // Get the PDF as a blob
-      const pdfBlob = await response.blob();
+      // Parse the JSON response to get the base64-encoded PDF
+      const data = await response.json();
+      console.log('Response data keys:', Object.keys(data));
+      
+      if (!data || !data.pdfBase64) {
+        throw new Error('Invalid response data: PDF data not found');
+      }
+      
+      // Convert base64 to blob
+      const byteCharacters = atob(data.pdfBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
       
       // Create a download link
       const url = URL.createObjectURL(pdfBlob);
