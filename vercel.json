@@ -38,13 +38,25 @@
         },
         {
           "key": "Access-Control-Allow-Headers",
-          "value": "X-Requested-With, Content-Type, Accept"
+          "value": "X-Requested-With, Content-Type, Accept, Authorization"
         },
         {
           "key": "Access-Control-Max-Age",
           "value": "86400"
         }
       ]
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/enhance-document",
+      "methods": ["POST", "OPTIONS"],
+      "dest": "/api/enhance.py"
+    },
+    {
+      "src": "/api/download-pdf",
+      "methods": ["POST", "OPTIONS"],
+      "dest": "/api/download.py"
     }
   ]
 } 

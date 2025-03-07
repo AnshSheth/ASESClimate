@@ -4,6 +4,7 @@ from reportlab.lib.pagesizes import letter
 import json
 import io
 import logging
+import base64
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -91,50 +92,113 @@ def create_pdf(content: str) -> bytes:
         logger.error(f"Error generating PDF: {str(e)}")
         raise Exception(f"Error generating PDF: {str(e)}")
 
-def handler(event, context):
-    """Main handler function for Vercel serverless function"""
-    logger.info(f"Received request: {event.get('method')} {event.get('path')}")
+class Handler(BaseHTTPRequestHandler):
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Accept')
+        self.send_header('Access-Control-Max-Age', '86400')
+        self.end_headers()
+    
+    def do_POST(self):
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length).decode('utf-8')
+            
+            # Parse JSON content
+            try:
+                data = json.loads(body)
+                content = data.get('content', '')
+                
+                if not content:
+                    self.send_response(400)
+                    self.send_header('Content-Type', 'application/json')
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"error": "Content is required"}).encode())
+                    return
+                
+                # Generate PDF
+                pdf_content = create_pdf(content)
+                
+                # Send response
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/pdf')
+                self.send_header('Content-Disposition', 'attachment; filename=enhanced_worksheet.pdf')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(pdf_content)
+                
+            except json.JSONDecodeError:
+                self.send_response(400)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Invalid JSON"}).encode())
+                
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": str(e)}).encode())
+
+# Vercel serverless function handler
+def handler(request):
+    """Vercel serverless function handler"""
+    logger.info("PDF generation handler called")
     
     # Handle OPTIONS request (CORS preflight)
-    if event.get('method') == 'OPTIONS':
-        return {
-            "statusCode": 200,
-            "headers": {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "POST, OPTIONS",
-                "Access-Control-Allow-Headers": "Content-Type, Accept",
-                "Access-Control-Max-Age": "86400"
-            },
-            "body": ""
+    if request.method == "OPTIONS":
+        headers = {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
+            "Access-Control-Max-Age": "86400"
         }
+        return {"statusCode": 200, "headers": headers, "body": ""}
     
     # Handle POST request
-    if event.get('method') == 'POST':
+    if request.method == "POST":
         try:
             # Get request body
-            body = event.get('body', '')
+            body = request.body
             
             # Parse JSON content
             try:
                 if isinstance(body, bytes):
                     body = body.decode('utf-8')
                 
-                content = body
+                data = json.loads(body)
+                content = data.get('content', '')
+                
+                if not content:
+                    return {
+                        "statusCode": 400,
+                        "headers": {
+                            "Content-Type": "application/json",
+                            "Access-Control-Allow-Origin": "*"
+                        },
+                        "body": json.dumps({"error": "Content is required"})
+                    }
+                
                 logger.info(f"Received content for PDF generation, length: {len(content)}")
                 
                 # Generate PDF
                 pdf_content = create_pdf(content)
                 
+                # Convert to base64 for response
+                pdf_base64 = base64.b64encode(pdf_content).decode('utf-8')
+                
                 # Send response
                 return {
                     "statusCode": 200,
                     "headers": {
-                        "Content-Type": "application/pdf",
-                        "Content-Disposition": "attachment; filename=enhanced_worksheet.pdf",
+                        "Content-Type": "application/json",
                         "Access-Control-Allow-Origin": "*"
                     },
-                    "body": pdf_content,
-                    "isBase64Encoded": True
+                    "body": json.dumps({"pdfBase64": pdf_base64})
                 }
                 
             except json.JSONDecodeError:

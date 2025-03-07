@@ -13,7 +13,8 @@ const getFunctionUrl = (functionName: string) => {
 // Helper function to determine if we should use Vercel API routes
 const shouldUseVercelApi = () => {
   // Check if we're in production and deployed to Vercel
-  return process.env.NEXT_PUBLIC_VERCEL_ENV === 'production';
+  return process.env.NEXT_PUBLIC_VERCEL_ENV === 'production' || 
+         typeof window !== 'undefined' && window.location.hostname.includes('vercel.app');
 };
 
 // Get the Supabase anon key for authorization
@@ -95,13 +96,22 @@ const FileUploadSupabase: React.FC = () => {
         const response = await fetch('/api/enhance-document', {
           method: 'POST',
           body: formData,
+          headers: {
+            'Accept': 'application/json',
+          }
         });
         
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
         if (!response.ok) {
-          throw new Error(`Error processing document: ${response.statusText}`);
+          const errorText = await response.text();
+          console.error('Error response:', errorText);
+          throw new Error(`Error processing document: ${response.statusText || errorText}`);
         }
         
         const data = await response.json();
+        console.log('Response data:', data);
         
         if (!data || !data.enhanced_content) {
           throw new Error('Invalid response data from server');
@@ -212,16 +222,47 @@ const FileUploadSupabase: React.FC = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
           },
           body: JSON.stringify({ content: enhancedContent }),
         });
         
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
         if (!response.ok) {
-          throw new Error(`Error generating PDF: ${response.statusText}`);
+          const errorText = await response.text();
+          console.error('Error response:', errorText);
+          throw new Error(`Error generating PDF: ${response.statusText || errorText}`);
         }
         
-        // Get the PDF as a blob
-        const pdfBlob = await response.blob();
+        // Check if the response is JSON (for base64 PDF) or blob (for direct PDF)
+        const contentType = response.headers.get('content-type');
+        console.log('Response content type:', contentType);
+        
+        let pdfBlob;
+        
+        if (contentType && contentType.includes('application/json')) {
+          // Handle JSON response with base64 PDF
+          const data = await response.json();
+          console.log('Response data keys:', Object.keys(data));
+          
+          if (!data || !data.pdfBase64) {
+            throw new Error('Invalid response data from server');
+          }
+          
+          // Convert base64 to blob
+          const byteCharacters = atob(data.pdfBase64);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
+        } else {
+          // Handle direct PDF blob response
+          pdfBlob = await response.blob();
+        }
         
         // Create a download link
         const url = URL.createObjectURL(pdfBlob);
