@@ -13,8 +13,22 @@ const getFunctionUrl = (functionName: string) => {
 
 // Get the Supabase anon key for authorization
 const getSupabaseAnonKey = () => {
-  // This is the default local development anon key
+  // Use environment variables for production
+  if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  }
+  
+  // Fallback to default local development anon key
   return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+};
+
+// Helper function to create proper headers for Supabase Edge Functions
+const getAuthHeaders = () => {
+  const anon = getSupabaseAnonKey();
+  return {
+    'Authorization': `Bearer ${anon}`,
+    'Accept': 'application/json',
+  };
 };
 
 // Extended options type for function invocation
@@ -92,8 +106,7 @@ const FileUploadSupabase: React.FC = () => {
         mode: 'cors',
         credentials: 'omit',
         headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${getSupabaseAnonKey()}`,
+          ...getAuthHeaders(),
         },
       });
       
@@ -138,8 +151,7 @@ const FileUploadSupabase: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${getSupabaseAnonKey()}`,
+          ...getAuthHeaders(),
         },
         mode: 'cors',
         credentials: 'omit',
