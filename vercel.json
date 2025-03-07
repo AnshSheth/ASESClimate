@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/api/enhance-document",
-      "destination": "/api/enhance"
+      "destination": "/api/enhance.py"
     },
     {
       "source": "/api/download-pdf",
-      "destination": "/api/download"
+      "destination": "/api/download.py"
     }
   ],
   "functions": {
@@ -45,18 +45,6 @@
           "value": "86400"
         }
       ]
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/enhance-document",
-      "methods": ["POST", "OPTIONS"],
-      "dest": "/api/enhance.py"
-    },
-    {
-      "src": "/api/download-pdf",
-      "methods": ["POST", "OPTIONS"],
-      "dest": "/api/download.py"
     }
   ]
 } 
