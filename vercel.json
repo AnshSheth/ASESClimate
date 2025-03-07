@@ -2,31 +2,9 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "rewrites": [
-    {
-      "source": "/api/enhance-document",
-      "destination": "/api/enhance.py"
-    },
-    {
-      "source": "/api/download-pdf",
-      "destination": "/api/download.py"
-    }
-  ],
-  "functions": {
-    "api/enhance.py": {
-      "runtime": "python3.9",
-      "memory": 1024,
-      "maxDuration": 60
-    },
-    "api/download.py": {
-      "runtime": "python3.9",
-      "memory": 1024,
-      "maxDuration": 60
-    }
-  },
   "headers": [
     {
-      "source": "/api/(.*)",
+      "source": "/(.*)",
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",

@@ -7,14 +7,8 @@ const getFunctionUrl = (functionName: string) => {
   if (process.env.NODE_ENV === 'development') {
     return `http://127.0.0.1:54321/functions/v1/${functionName}`;
   }
-  return null; // Let Supabase client handle it in production
-};
-
-// Helper function to determine if we should use Vercel API routes
-const shouldUseVercelApi = () => {
-  // Check if we're in production and deployed to Vercel
-  return process.env.NEXT_PUBLIC_VERCEL_ENV === 'production' || 
-         typeof window !== 'undefined' && window.location.hostname.includes('vercel.app');
+  // For production, use the Supabase project URL
+  return `https://jinvvpncssntrttaajrb.supabase.co/functions/v1/${functionName}`;
 };
 
 // Get the Supabase anon key for authorization
@@ -83,119 +77,44 @@ const FileUploadSupabase: React.FC = () => {
     setError(null);
     
     try {
-      // Check if we should use Vercel API routes
-      if (shouldUseVercelApi()) {
-        // Use Vercel API routes in production
-        console.log('Using Vercel API routes for document enhancement');
-        
-        // Create a FormData object to send the file
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        // Send the file to the Vercel API route
-        const response = await fetch('/api/enhance-document', {
-          method: 'POST',
-          body: formData,
-          headers: {
-            'Accept': 'application/json',
-          }
-        });
-        
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Error response:', errorText);
-          throw new Error(`Error processing document: ${response.statusText || errorText}`);
-        }
-        
-        const data = await response.json();
-        console.log('Response data:', data);
-        
-        if (!data || !data.enhanced_content) {
-          throw new Error('Invalid response data from server');
-        }
-        
-        // Set the enhanced content
-        setEnhancedContent(data.enhanced_content);
+      // Always use Supabase Edge Functions
+      // Create a FormData object to send the file directly
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('subject', 'biology');
+      
+      // Send the file directly to the Edge Function
+      const functionUrl = getFunctionUrl('enhance-document');
+      console.log('Calling Edge Function at:', functionUrl);
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        body: formData,
+        mode: 'cors',
+        credentials: 'omit',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${getSupabaseAnonKey()}`,
+        },
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Error processing document: ${response.statusText || errorText}`);
       }
-      // For development environment, bypass Supabase storage
-      else if (process.env.NODE_ENV === 'development') {
-        // Create a FormData object to send the file directly
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('subject', 'biology');
-        
-        // Send the file directly to the Edge Function
-        const functionUrl = getFunctionUrl('enhance-document');
-        console.log('Calling Edge Function at:', functionUrl);
-        const response = await fetch(functionUrl!, {
-          method: 'POST',
-          body: formData,
-          mode: 'cors',
-          credentials: 'omit',
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${getSupabaseAnonKey()}`,
-          },
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Error processing document: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        
-        if (!data || !data.enhanced_content) {
-          throw new Error('Invalid response data from server');
-        }
-        
-        // Set the enhanced content
-        setEnhancedContent(data.enhanced_content);
-      } else {
-        // Production flow - use Supabase storage
-        // 1. Upload file to Supabase Storage
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${uuidv4()}.${fileExt}`;
-        const filePath = `documents/${fileName}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('documents')
-          .upload(filePath, file);
-          
-        if (uploadError) {
-          throw new Error(`Error uploading file: ${uploadError.message}`);
-        }
-        
-        // 2. Get public URL for the uploaded file
-        const { data: { publicUrl } } = supabase.storage
-          .from('documents')
-          .getPublicUrl(filePath);
-        
-        // 3. Call Supabase Edge Function to process the document
-        const options: ExtendedFunctionInvokeOptions = {
-          body: { 
-            fileUrl: publicUrl,
-            subject: 'biology'
-          },
-          url: getFunctionUrl('enhance-document') // Use local URL in development
-        };
-        
-        const { data, error: functionError } = await supabase.functions
-          .invoke('enhance-document', options as any);
-        
-        if (functionError) {
-          throw new Error(`Error processing document: ${functionError.message}`);
-        }
-        
-        if (!data || !data.enhanced_content) {
-          throw new Error('Invalid response data from server');
-        }
-        
-        // 4. Set the enhanced content
-        setEnhancedContent(data.enhanced_content);
+      
+      const data = await response.json();
+      console.log('Response data:', data);
+      
+      if (!data || !data.enhanced_content) {
+        throw new Error('Invalid response data from server');
       }
+      
+      // Set the enhanced content
+      setEnhancedContent(data.enhanced_content);
     } catch (err) {
       console.error('Error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -212,143 +131,42 @@ const FileUploadSupabase: React.FC = () => {
 
     setDownloadLoading(true);
     try {
-      // Check if we should use Vercel API routes
-      if (shouldUseVercelApi()) {
-        // Use Vercel API routes in production
-        console.log('Using Vercel API routes for PDF generation');
-        
-        // Send the content to the Vercel API route
-        const response = await fetch('/api/download-pdf', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify({ content: enhancedContent }),
-        });
-        
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Error response:', errorText);
-          throw new Error(`Error generating PDF: ${response.statusText || errorText}`);
-        }
-        
-        // Check if the response is JSON (for base64 PDF) or blob (for direct PDF)
-        const contentType = response.headers.get('content-type');
-        console.log('Response content type:', contentType);
-        
-        let pdfBlob;
-        
-        if (contentType && contentType.includes('application/json')) {
-          // Handle JSON response with base64 PDF
-          const data = await response.json();
-          console.log('Response data keys:', Object.keys(data));
-          
-          if (!data || !data.pdfBase64) {
-            throw new Error('Invalid response data from server');
-          }
-          
-          // Convert base64 to blob
-          const byteCharacters = atob(data.pdfBase64);
-          const byteNumbers = new Array(byteCharacters.length);
-          for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-          }
-          const byteArray = new Uint8Array(byteNumbers);
-          pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
-        } else {
-          // Handle direct PDF blob response
-          pdfBlob = await response.blob();
-        }
-        
-        // Create a download link
-        const url = URL.createObjectURL(pdfBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'enhanced-document.pdf';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+      // Always use Supabase Edge Functions
+      const functionUrl = getFunctionUrl('generate-pdf');
+      console.log('Calling PDF Generation at:', functionUrl);
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${getSupabaseAnonKey()}`,
+        },
+        mode: 'cors',
+        credentials: 'omit',
+        body: JSON.stringify({ content: enhancedContent }),
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Error generating PDF: ${response.statusText || errorText}`);
       }
-      // For development environment, use fetch directly
-      else if (process.env.NODE_ENV === 'development') {
-        // Call Supabase Edge Function to generate PDF
-        const options: ExtendedFunctionInvokeOptions = {
-          body: { content: enhancedContent },
-          url: getFunctionUrl('generate-pdf') // Use local URL in development
-        };
-        
-        const functionUrl = getFunctionUrl('generate-pdf');
-        console.log('Calling PDF Generation at:', functionUrl);
-        const response = await fetch(functionUrl!, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${getSupabaseAnonKey()}`,
-          },
-          mode: 'cors',
-          credentials: 'omit',
-          body: JSON.stringify({ content: enhancedContent }),
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Error generating PDF: ${response.statusText}`);
-        }
-        
-        // Get the PDF as a blob
-        const pdfBlob = await response.blob();
-        
-        // Create a download link
-        const url = URL.createObjectURL(pdfBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'enhanced-document.pdf';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      } else {
-        // Production flow - use Supabase functions
-        const options: ExtendedFunctionInvokeOptions = {
-          body: { content: enhancedContent },
-          url: getFunctionUrl('generate-pdf') // Use local URL in development
-        };
-        
-        const { data, error } = await supabase.functions
-          .invoke('generate-pdf', options as any);
-          
-        if (error) {
-          throw new Error(`Error generating PDF: ${error.message}`);
-        }
-        
-        if (!data || !data.pdfBase64) {
-          throw new Error('Invalid response data from server');
-        }
-        
-        // Convert base64 to blob
-        const byteCharacters = atob(data.pdfBase64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
-        
-        // Create a download link
-        const url = URL.createObjectURL(pdfBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'enhanced-document.pdf';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
+      
+      // Get the PDF as a blob
+      const pdfBlob = await response.blob();
+      
+      // Create a download link
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'enhanced-document.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
