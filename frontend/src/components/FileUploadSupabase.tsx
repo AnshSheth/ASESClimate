@@ -556,49 +556,114 @@ const FileUploadSupabase: React.FC = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-4 bg-white rounded-lg shadow">
-      <h2 className="text-2xl font-bold mb-4">Upload Document (Supabase)</h2>
+    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg">
+      <h2 className="text-3xl font-bold mb-6 text-gray-800">Climate-Enhanced Documents</h2>
       
       <form onSubmit={handleSubmit} className="mb-6">
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Select PDF Document</label>
-          <input
-            type="file"
-            onChange={handleFileChange}
-            className="block w-full text-gray-700 border border-gray-300 rounded py-2 px-3"
-            accept=".pdf"
-            disabled={loading}
-          />
+        <div className="mb-5">
+          <label className="block text-gray-700 font-medium mb-2">Upload PDF Document</label>
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors">
+            {file ? (
+              <div className="flex items-center justify-center">
+                <svg className="w-8 h-8 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span className="text-gray-700">{file.name}</span>
+                <button 
+                  type="button" 
+                  className="ml-2 text-red-500 hover:text-red-700"
+                  onClick={() => setFile(null)}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              </div>
+            ) : (
+              <div>
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <p className="mt-1 text-sm text-gray-500">
+                  Drag and drop your PDF here, or click to browse
+                </p>
+              </div>
+            )}
+            <input
+              type="file"
+              onChange={handleFileChange}
+              className="hidden"
+              accept=".pdf"
+              disabled={loading}
+              id="file-upload"
+            />
+            <label 
+              htmlFor="file-upload" 
+              className={`mt-4 inline-block px-4 py-2 border border-transparent text-sm font-medium rounded-md ${file ? 'text-blue-700 bg-blue-100 hover:bg-blue-200' : 'text-white bg-blue-600 hover:bg-blue-700'} cursor-pointer transition-colors`}
+            >
+              {file ? 'Change File' : 'Select PDF'}
+            </label>
+          </div>
         </div>
         
         <button
           type="submit"
-          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
+          className={`w-full flex items-center justify-center py-3 px-4 rounded-md text-white font-medium transition-colors ${!file || loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
           disabled={!file || loading}
         >
-          {loading ? 'Processing...' : 'Enhance Document'}
+          {loading ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Processing Document
+            </>
+          ) : (
+            'Enhance Document'
+          )}
         </button>
       </form>
       
       {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
-          {error}
+        <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
+          <div className="flex">
+            <svg className="h-5 w-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>{error}</span>
+          </div>
         </div>
       )}
       
       {enhancedContent && (
-        <div className="mt-6">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-xl font-bold">Enhanced Content</h3>
+        <div className="mt-8">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold text-gray-800">Enhanced Content</h3>
             <button
               onClick={handleDownloadPDF}
-              className="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded text-sm"
+              className="flex items-center bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded transition-colors"
               disabled={downloadLoading}
             >
-              {downloadLoading ? 'Generating PDF...' : 'Download as PDF'}
+              {downloadLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Generating PDF...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                  </svg>
+                  Download as PDF
+                </>
+              )}
             </button>
           </div>
-          <div className="p-4 bg-gray-50 rounded border border-gray-200 whitespace-pre-wrap">
+          <div className="p-6 bg-gray-50 rounded-lg border border-gray-200 shadow-inner overflow-auto max-h-96">
             {formatContent(enhancedContent)}
           </div>
         </div>

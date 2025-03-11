@@ -9,13 +9,21 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@nextui-org/progress": "^2.2.6",
+    "@nextui-org/react": "^2.6.11",
     "@supabase/supabase-js": "^2.49.1",
     "@types/uuid": "^10.0.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "formidable": "^3.5.2",
+    "framer-motion": "^12.4.11",
+    "lucide-react": "^0.479.0",
     "next": "^14.1.0",
     "pdf-parse": "^1.1.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "tailwind-merge": "^3.0.2",
+    "tailwindcss-animate": "^1.0.7",
     "typescript": "5.3.3",
     "uuid": "^11.1.0"
   },
