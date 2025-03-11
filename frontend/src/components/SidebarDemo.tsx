@@ -6,6 +6,9 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import FileUploadSupabase from "./FileUploadSupabase";
+import { RobotScene } from "@/components/RobotScene";
+import { Spotlight } from "@/components/ui/spotlight";
+import { SplineScene } from "@/components/ui/splite";
 
 // Override the default sidebar width by targeting the element with CSS
 // This will be added to the global CSS
@@ -132,7 +135,7 @@ export const LogoIcon = () => {
   );
 };
 
-// Dashboard component with FileUploadSupabase
+// Dashboard component with FileUploadSupabase and RobotScene
 const Dashboard = () => {
   return (
     <div className="flex flex-col min-h-full">
@@ -177,8 +180,17 @@ const Dashboard = () => {
           </div>
         </div>
         
-        <div className="bg-white shadow-sm rounded-lg p-6 border border-gray-200 mb-10">
-          <FileUploadSupabase />
+        {/* Main content area with file upload and 3D robot */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-10">
+          {/* File upload section - takes 3 columns */}
+          <div className="lg:col-span-3 bg-white shadow-sm rounded-lg p-6 border border-gray-200">
+            <FileUploadSupabase />
+          </div>
+          
+          {/* 3D Robot scene - takes 2 columns */}
+          <div className="hidden lg:block lg:col-span-2">
+            <RobotScene />
+          </div>
         </div>
       </div>
     </div>
