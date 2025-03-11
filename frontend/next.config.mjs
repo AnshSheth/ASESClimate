@@ -1,12 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    esmExternals: true
-  },
-  compiler: {
-    styledComponents: true
-  }
+  // Removing experimental and compiler options to simplify
 }
 
 export default nextConfig 
