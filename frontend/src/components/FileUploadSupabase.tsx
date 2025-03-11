@@ -18,8 +18,8 @@ const getSupabaseAnonKey = () => {
     return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   }
   
-  // Fallback to default local development anon key
-  return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+  // Fallback to the correct production anon key
+  return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppbnZ2cG5jc3NudHJ0dGFhanJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEyOTQ2MjgsImV4cCI6MjA1Njg3MDYyOH0.KhdLWI7XtqTA3II3zEDhqkDTX7-0ZnzxBh-b7eScK9w';
 };
 
 // Helper function to create proper headers for Supabase Edge Functions

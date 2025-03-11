@@ -276,7 +276,20 @@ Deno.serve(async (req) => {
   }
   
   try {
-    // We now expect a JSON payload with extracted text
+    // We now ONLY expect a JSON payload with extracted text
+    // No more direct file handling in this function
+    const contentType = req.headers.get('content-type');
+    
+    if (!contentType || !contentType.includes('application/json')) {
+      return new Response(
+        JSON.stringify({ error: "Content type must be application/json" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+    
     const payload = await req.json();
     
     if (!payload || !payload.documentText) {
