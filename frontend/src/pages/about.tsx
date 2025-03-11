@@ -169,7 +169,7 @@ export default function About() {
             >
               <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Team</h2>
               <p className="text-xl text-gray-700 max-w-3xl mx-auto">
-                We're a dedicated group of educators, technologists, and climate scientists working together to create meaningful educational tools.
+                We're a dedicated group of Stanford undergrads with experiences across climate activism, education, and applied research working together to tackle the challenge of climate literacy.
               </p>
               
               {/* Team cards with actual names */}
