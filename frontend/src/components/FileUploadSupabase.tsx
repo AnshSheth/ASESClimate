@@ -556,8 +556,8 @@ const FileUploadSupabase: React.FC = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-      <h2 className="text-3xl font-bold mb-6 text-gray-800">Climate-Enhanced Documents</h2>
+    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg">
+      <h2 className="text-3xl font-bold mb-6 text-gray-800">Ecodify your Worksheets</h2>
       
       <form onSubmit={handleSubmit} className="mb-6">
         <div className="mb-5">
@@ -663,7 +663,7 @@ const FileUploadSupabase: React.FC = () => {
               )}
             </button>
           </div>
-          <div className="p-6 bg-gray-50 rounded-lg border border-gray-200 shadow-inner overflow-auto max-h-96">
+          <div className="p-6 bg-gray-50 rounded-lg border border-gray-200 shadow-inner overflow-auto max-h-[500px]">
             {formatContent(enhancedContent)}
           </div>
         </div>

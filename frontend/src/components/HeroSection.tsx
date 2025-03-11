@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 const HeroSection: React.FC = () => {
   // Handle button click directly
   const handleButtonClick = () => {
-    window.location.href = '/dashboard';
+    window.location.href = '/about';
   };
 
   return (
@@ -71,7 +71,7 @@ const HeroSection: React.FC = () => {
           onClick={handleButtonClick}
           className="px-8 py-4 text-lg font-medium text-ecodify-primary bg-white rounded-lg shadow-lg hover:bg-gray-100 transition-all duration-300 cursor-pointer"
         >
-          Try Ecodify
+          Learn More
         </button>
       </div>
       

@@ -30,14 +30,14 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     },
     {
       label: "Settings",
-      href: "/settings",
+      href: "/coming-soon",
       icon: (
         <Settings className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
       ),
     },
     {
       label: "Logout",
-      href: "/logout",
+      href: "/coming-soon",
       icon: (
         <LogOut className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
       ),
@@ -69,7 +69,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
           <SidebarLink
             link={{
               label: "User Profile",
-              href: "/profile",
+              href: "/coming-soon",
               icon: (
                 <div className="h-7 w-7 flex-shrink-0 rounded-full bg-ecodify-primary flex items-center justify-center text-white font-medium">
                   U
